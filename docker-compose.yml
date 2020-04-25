@@ -1,0 +1,55 @@
+version: "3"
+
+networks:
+  proxy:
+    external: true
+  internal:
+    external: false
+
+services:
+  web:
+    depends_on:
+      - db
+    image: wordpress:5.0.3
+    volumes:
+      - ./wp-content:/var/www/html/wp-content 
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_PASSWORD: juanchito07
+    labels:
+      - traefik.backend=NOMBRE
+      - traefik.frontend.rule=Host:DOMINIO
+      - traefik.docker.network=proxy
+      - traefik.port=80
+    networks:
+      - internal
+      - proxy
+  db:
+    image: mysql:5.7
+    volumes:
+       - ./db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: juanchito07
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin
+    labels:
+      - traefik.backend=adminer
+      - traefik.frontend.rule=Host:DOMINIO;PathPrefixStrip:/db_admin
+      - traefik.docker.network=proxy
+      - traefik.port=80
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: juanchito07
+      PMA_ABSOLUTE_URI: http://DOMINIO/db_admin/
+    networks:
+      - internal
+      - proxy
+
+volumes:
+  db_data:
